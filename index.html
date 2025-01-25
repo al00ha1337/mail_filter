@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filtracja Maili</title>
+</head>
+<body>
+  <h1>Upload Pliku TXT</h1>
+  <form id="upload-form">
+    <input type="file" id="file-input" accept=".txt" required />
+    <button type="submit">Wyślij</button>
+  </form>
+  <p id="response-message"></p>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const fileInput = document.getElementById('file-input');
+    const responseMessage = document.getElementById('response-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const file = fileInput.files[0];
+      if (!file) {
+        responseMessage.textContent = 'Proszę wybrać plik!';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('https://mail-filter.onrender.com', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'processed_file.txt';
+          a.click();
+
+          responseMessage.textContent = 'Plik został przetworzony i pobrany!';
+        } else {
+          const error = await response.json();
+          responseMessage.textContent = `Błąd: ${error.error}`;
+        }
+      } catch (err) {
+        responseMessage.textContent = `Błąd połączenia: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
