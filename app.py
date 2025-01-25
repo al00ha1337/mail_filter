@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
-import re
 import json
+import re
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=["https://al00ha1337.github.io"])
@@ -29,24 +29,34 @@ def upload_file():
         wyniki = []
 
         with open(input_path, 'r', encoding='utf-8') as infile:
-            for line in infile:
-                line = line.strip()
+            content = infile.read()
 
-                # Wykrywanie e-maili i haseł w różnych formatach
-                if "login:" in line.lower():
-                    email_match = re.search(r'login:\s*(\S+@\S+)', line, re.IGNORECASE)
-                    if email_match:
-                        email = email_match.group(1)
-                        wyniki.append(f"{email};Brak")
-
-                if "pass:" in line.lower():
-                    pass_match = re.search(r'pass:\s*(\S+)', line, re.IGNORECASE)
-                    if pass_match:
-                        password = pass_match.group(1)
-                        if wyniki and "Brak" in wyniki[-1]:  # Dopisz hasło do ostatniego wpisu
-                            wyniki[-1] = wyniki[-1].replace("Brak", password)
-                        else:
-                            wyniki.append(f"Brak;{password}")
+            # Sprawdź, czy dane są w formacie JSON
+            try:
+                data = json.loads(content)
+                if isinstance(data, list):  # Dane jako lista JSON
+                    for item in data:
+                        if isinstance(item, dict):
+                            email = item.get('email', 'Brak')
+                            password = item.get('password', 'Brak')
+                            wyniki.append(f"{email};{password}")
+            except json.JSONDecodeError:
+                # Dane w formacie tekstowym
+                for line in content.splitlines():
+                    line = line.strip()
+                    if "login:" in line.lower():
+                        email_match = re.search(r'login:\s*(\S+@\S+)', line, re.IGNORECASE)
+                        if email_match:
+                            email = email_match.group(1)
+                            wyniki.append(f"{email};Brak")
+                    if "pass:" in line.lower():
+                        pass_match = re.search(r'pass:\s*(\S+)', line, re.IGNORECASE)
+                        if pass_match:
+                            password = pass_match.group(1)
+                            if wyniki and "Brak" in wyniki[-1]:
+                                wyniki[-1] = wyniki[-1].replace("Brak", password)
+                            else:
+                                wyniki.append(f"Brak;{password}")
 
         # Zapis wyników do pliku
         with open(output_path, 'w', encoding='utf-8') as outfile:
