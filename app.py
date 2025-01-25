@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
+import re
 import json
 
 app = Flask(__name__)
-
-# Konfiguracja CORS, aby zezwolić na żądania z GitHub Pages
 CORS(app, supports_credentials=True, origins=["https://al00ha1337.github.io"])
 
 @app.route('/')
@@ -27,31 +26,27 @@ def upload_file():
 
         # Przetwarzanie pliku
         output_path = f"/tmp/processed_{file.filename}"
-        with open(input_path, 'r', encoding='utf-8') as infile:
-            content = infile.read()
-
-        result = []
-        while content:
-            try:
-                data, index = json.JSONDecoder().raw_decode(content)
-                result.append(data)
-                content = content[index:].strip()
-            except json.JSONDecodeError:
-                break
-
-        # Wyciąganie emaili i haseł
         wyniki = []
-        for item in result:
-            if isinstance(item, dict):
-                email = item.get('email', 'Brak')
-                password = item.get('password', 'Brak')
-                wyniki.append(f"{email};{password}")
-            elif isinstance(item, list):
-                for sub_item in item:
-                    if isinstance(sub_item, dict):
-                        email = sub_item.get('email', 'Brak')
-                        password = sub_item.get('password', 'Brak')
-                        wyniki.append(f"{email};{password}")
+
+        with open(input_path, 'r', encoding='utf-8') as infile:
+            for line in infile:
+                line = line.strip()
+
+                # Wykrywanie e-maili i haseł w różnych formatach
+                if "login:" in line.lower():
+                    email_match = re.search(r'login:\s*(\S+@\S+)', line, re.IGNORECASE)
+                    if email_match:
+                        email = email_match.group(1)
+                        wyniki.append(f"{email};Brak")
+
+                if "pass:" in line.lower():
+                    pass_match = re.search(r'pass:\s*(\S+)', line, re.IGNORECASE)
+                    if pass_match:
+                        password = pass_match.group(1)
+                        if wyniki and "Brak" in wyniki[-1]:  # Dopisz hasło do ostatniego wpisu
+                            wyniki[-1] = wyniki[-1].replace("Brak", password)
+                        else:
+                            wyniki.append(f"Brak;{password}")
 
         # Zapis wyników do pliku
         with open(output_path, 'w', encoding='utf-8') as outfile:
