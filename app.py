@@ -1,7 +1,22 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+
 app = Flask(__name__)
-CORS(app)
+
+# Konfiguracja CORS, aby zezwolić na żądania z konkretnego origin
+CORS(app, resources={r"/*": {"origins": "https://al00ha1337.github.io"}})
+
+@app.route('/')
+def home():
+    return "Aplikacja działa! Użyj endpointu /upload, aby przesłać plik.", 200
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "Nie przesłano pliku"}), 400
+    file = request.files['file']
+    # Przetwarzanie pliku tutaj
+    return jsonify({"message": "Plik przesłany poprawnie!"})
 import os
 import json
 
