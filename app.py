@@ -69,3 +69,7 @@ def upload_file():
 
 if __name__ == "__main__":
     app.run(debug=True)
+    from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
